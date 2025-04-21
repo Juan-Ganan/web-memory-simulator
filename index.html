@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Algoritmos de Reemplazo de Página</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Simulador de Algoritmos de Reemplazo de Página</h1>
+    <label for="algorithm">Seleccione un algoritmo:</label>
+    <select id="algorithm"></select>
+
+    <label for="frames">Número de marcos:</label>
+    <input type="number" id="frames" min="1" value="3">
+
+    <label for="reference">Cadena de referencias (separadas por espacios):</label>
+    <input type="text" id="reference" value="7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0">
+
+    <button id="run-button">Ejecutar</button>
+
+    <div id="resultado"></div>
+    <table id="tabla-resultado"></table>
+  </div>
+
+  Juan David Gañan , 2025
+
+  <script src="scripts/model.js"></script>
+  <script src="scripts/view.js"></script>
+  <script src="scripts/controller.js"></script>
+</body>
+</html>

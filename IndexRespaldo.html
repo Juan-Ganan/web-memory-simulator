@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulador de Algoritmos de Reemplazo de Página</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background-color: #f2f4f8;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .container {
+      max-width: 800px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    select, input, button {
+      padding: 8px;
+      font-size: 16px;
+      margin-top: 5px;
+      width: 100%;
+    }
+    #tabla-resultado {
+      margin-top: 20px;
+      overflow-x: auto;
+      border-collapse: collapse;
+      width: 100%;
+    }
+    #tabla-resultado th, #tabla-resultado td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+    #tabla-resultado tr.fade {
+      animation: fadeIn 0.4s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Simulador de Algoritmos de Reemplazo de Página</h1>
+    <label for="algorithm">Seleccione un algoritmo:</label>
+    <select id="algorithm">
+      <option value="optimo">Óptimo</option>
+      <option value="fifo">FIFO</option>
+      <option value="lru">LRU</option>
+      <option value="segunda">Segunda Oportunidad</option>
+      <option value="reloj">Reloj</option>
+      <option value="fifoplus">FIFO+</option>
+    </select>
+
+    <label for="frames">Número de marcos:</label>
+    <input type="number" id="frames" min="1" value="3">
+
+    <label for="reference">Cadena de referencias (separadas por espacios):</label>
+    <input type="text" id="reference" value="7 0 1 2 0 3 0 4 2 3 0 3 2 1 2 0">
+
+    <button onclick="ejecutarAlgoritmo()">Ejecutar</button>
+
+    <div id="resultado"></div>
+    <table id="tabla-resultado"></table>
+  </div>
+
+  <script>
+    function ejecutarAlgoritmo() {
+      const algoritmo = document.getElementById("algorithm").value;
+      const frames = parseInt(document.getElementById("frames").value);
+      const referencias = document.getElementById("reference").value.trim().split(" ").map(Number);
+  
+      let resultado = "";
+      let memoria = [];
+      let fallos = 0, reemplazos = 0;
+  
+      switch (algoritmo) {
+        case "optimo":
+          [memoria, fallos, reemplazos] = ejecutarOptimo(frames, referencias);
+          break;
+        case "fifo":
+          [memoria, fallos, reemplazos] = ejecutarFIFO(frames, referencias);
+          break;
+        case "lru":
+          [memoria, fallos, reemplazos] = ejecutarLRU(frames, referencias);
+          break;
+        case "segunda":
+          [memoria, fallos, reemplazos] = ejecutarSegundaOportunidad(frames, referencias);
+          break;
+        case "reloj":
+          [memoria, fallos, reemplazos] = ejecutarReloj(frames, referencias);
+          break;
+        case "fifoplus":
+          [memoria, fallos, reemplazos] = ejecutarFIFOPlus(frames, referencias);
+          break;
+        default:
+          resultado = "Algoritmo no implementado.";
+          document.getElementById("resultado").innerText = resultado;
+          return;
+      }
+  
+      mostrarTabla(memoria, referencias, fallos, reemplazos);
+    }
+  
+    function mostrarTabla(memoria, referencias, fallos, reemplazos) {
+        const tabla = document.getElementById("tabla-resultado");
+        tabla.innerHTML = "";
+
+        const encabezado = document.createElement("tr");
+        encabezado.classList.add("fade");
+        encabezado.innerHTML = `<th>Marco</th>` + referencias.map(ref => `<th>${ref}</th>`).join("");
+        tabla.appendChild(encabezado);
+
+         for (let f = 0; f < memoria.length; f++) {
+            const fila = document.createElement("tr");
+            fila.classList.add("fade");
+            fila.innerHTML = `<th>${f}</th>` + memoria[f].map(v => `<td>${v !== -1 ? v : " "}</td>`).join("");
+            tabla.appendChild(fila);
+  }
+
+  const info = `<p><strong>Fallos:</strong> ${fallos} | <strong>Reemplazos:</strong> ${reemplazos} | <strong>Asignaciones:</strong> ${fallos - reemplazos}</p>`;
+  document.getElementById("resultado").innerHTML = info;
+}
+
+  
+    function ejecutarOptimo(numFrames, referencias) {
+      let frames = Array(numFrames).fill(-1);
+      let memoria = Array.from({ length: numFrames }, () => []);
+      let fallos = 0, reemplazos = 0;
+  
+      for (let i = 0; i < referencias.length; i++) {
+        const actual = referencias[i];
+  
+        if (!frames.includes(actual)) {
+          fallos++;
+          if (frames.includes(-1)) {
+            frames[frames.indexOf(-1)] = actual;
+          } else {
+            const futuros = frames.map(p => {
+              let idx = referencias.slice(i + 1).indexOf(p);
+              return idx === -1 ? Infinity : idx;
+            });
+            const reemplazoIndex = futuros.indexOf(Math.max(...futuros));
+            frames[reemplazoIndex] = actual;
+            reemplazos++;
+          }
+        }
+  
+        frames.forEach((val, idx) => memoria[idx].push(val));
+      }
+  
+      return [memoria, fallos, reemplazos];
+    }
+  
+    function ejecutarFIFO(numFrames, referencias) {
+      let frames = Array(numFrames).fill(-1);
+      let memoria = Array.from({ length: numFrames }, () => []);
+      let cola = [];
+      let fallos = 0, reemplazos = 0;
+  
+      for (let actual of referencias) {
+        if (!frames.includes(actual)) {
+          fallos++;
+          if (frames.includes(-1)) {
+            const index = frames.indexOf(-1);
+            frames[index] = actual;
+            cola.push(index);
+          } else {
+            const index = cola.shift();
+            frames[index] = actual;
+            cola.push(index);
+            reemplazos++;
+          }
+        }
+        frames.forEach((val, idx) => memoria[idx].push(val));
+      }
+  
+      return [memoria, fallos, reemplazos];
+    }
+  
+    function ejecutarLRU(numFrames, referencias) {
+      let frames = Array(numFrames).fill(-1);
+      let memoria = Array.from({ length: numFrames }, () => []);
+      let stack = [];
+      let fallos = 0, reemplazos = 0;
+  
+      for (let actual of referencias) {
+        if (!frames.includes(actual)) {
+          fallos++;
+          if (frames.includes(-1)) {
+            const index = frames.indexOf(-1);
+            frames[index] = actual;
+          } else {
+            const lru = stack.shift();
+            const index = frames.indexOf(lru);
+            frames[index] = actual;
+            reemplazos++;
+          }
+        } else {
+          stack.splice(stack.indexOf(actual), 1);
+        }
+  
+        stack.push(actual);
+        frames.forEach((val, idx) => memoria[idx].push(val));
+      }
+  
+      return [memoria, fallos, reemplazos];
+    }
+  
+    function ejecutarSegundaOportunidad(numFrames, referencias) {
+      let frames = Array(numFrames).fill(-1);
+      let bits = Array(numFrames).fill(0);
+      let memoria = Array.from({ length: numFrames }, () => []);
+      let pointer = 0, fallos = 0, reemplazos = 0;
+  
+      for (let actual of referencias) {
+        let idx = frames.indexOf(actual);
+        if (idx !== -1) {
+          bits[idx] = 1;
+        } else {
+          fallos++;
+          while (true) {
+            if (bits[pointer] === 0) {
+              if (frames[pointer] !== -1) reemplazos++;
+              frames[pointer] = actual;
+              bits[pointer] = 1;
+              pointer = (pointer + 1) % numFrames;
+              break;
+            } else {
+              bits[pointer] = 0;
+              pointer = (pointer + 1) % numFrames;
+            }
+          }
+        }
+  
+        frames.forEach((val, idx) => memoria[idx].push(val));
+      }
+  
+      return [memoria, fallos, reemplazos];
+    }
+  
+    function ejecutarReloj(frames, refs) {
+      return ejecutarSegundaOportunidad(frames, refs);
+    }
+  
+    function ejecutarFIFOPlus(frames, refs) {
+      return ejecutarSegundaOportunidad(frames, refs); // Suponiendo implementación similar
+    }
+  </script>
+  
+</body>
+</html>
